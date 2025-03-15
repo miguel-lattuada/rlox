@@ -1,4 +1,4 @@
-use super::{token::Token, tokentype::Literal, tokentype::TokenType};
+use super::{keywords::get_keyword_token_type, token::Token, tokentype::{Literal, TokenType}};
 use crate::error::ErrorReporter;
 
 pub struct Scanner<'a> {
@@ -119,6 +119,11 @@ impl<'a> Scanner<'a> {
                     return;
                 }
 
+                if char.is_alphabetic() || *char == '_' {
+                    self.scan_identifier();
+                    return;
+                }
+
                 let message = format!("Unexpected character: '{}'", char);
                 self.report(self._line, "", &message)
             }
@@ -169,6 +174,22 @@ impl<'a> Scanner<'a> {
                     .unwrap(),
             )),
         );
+    }
+
+    fn scan_identifier(&mut self) {
+        while self.peek().is_alphanumeric() || self.peek() == '_' {
+            self.advance();
+        }
+
+        let text = &self.source[self._start..self._current];
+        let token_type = get_keyword_token_type(text);
+
+        let token = match token_type {
+            Some(token_type) => token_type,
+            None => TokenType::Identifier,
+        };
+
+        self.add_token(token);
     }
 
     fn advance(&mut self) -> Option<&char> {

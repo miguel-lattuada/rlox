@@ -1,5 +1,9 @@
-fun sum_two_numbers(a, b) {
-    return a + b;
+fun algo() {}
+
+class Foo {
+  method() {
+    print "foo";
+  }
 }
 
-print sum_two_numbers(1, 2);
+print "foo";

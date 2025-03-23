@@ -2,6 +2,7 @@ use std::{env, process};
 
 mod error;
 mod runner;
+mod ast;
 mod scanner;
 mod parser;
 
@@ -9,20 +10,21 @@ use runner::Runner;
 
 fn main() {
     parser::example();
-    // let args = env::args().collect::<Vec<String>>();
 
-    // if args.len() > 2 {
-    //     eprintln!("Usage: rlox [script]");
-    //     process::exit(64);
-    // }
+    let args = env::args().collect::<Vec<String>>();
 
-    // let mut runner = Runner::new();
+    if args.len() > 2 {
+        eprintln!("Usage: rlox [script]");
+        process::exit(64);
+    }
 
-    // let script_path = args.get(1);
+    let mut runner = Runner::new();
 
-    // if let Some(script) = script_path {
-    //     runner.run_file(script);
-    // } else {
-    //     runner.run_prompt();
-    // }
+    let script_path = args.get(1);
+
+    if let Some(script) = script_path {
+        runner.run_file(script);
+    } else {
+        runner.run_prompt();
+    }
 }

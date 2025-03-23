@@ -1,5 +1,5 @@
-use crate::scanner::Literal;
-use crate::scanner::Token;
+use super::token::Token;
+use super::tokentype::Literal;
 
 pub trait Visitor<T> {
     fn visit_literal_expr(&mut self, expr: &Expr) -> T;

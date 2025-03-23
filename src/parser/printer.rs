@@ -1,5 +1,5 @@
-use super::expr::{Expr, Visitor};
-use crate::scanner::Literal;
+use crate::ast::expr::{Expr, Visitor};
+use crate::ast::tokentype::Literal;
 
 pub struct AstPrinter;
 impl AstPrinter {

@@ -1,10 +1,12 @@
-mod expr;
 mod printer;
 
 pub fn example() {
-    use crate::scanner::{Literal, Token, TokenType};
+    use crate::ast::{
+        expr::{bexpr, gexpr, lexpr, uexpr},
+        token::Token,
+        tokentype::{Literal, TokenType},
+    };
 
-    use expr::{bexpr, gexpr, lexpr, uexpr};
     use printer::AstPrinter;
 
     let expression = bexpr(

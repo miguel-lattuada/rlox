@@ -1,4 +1,8 @@
-use super::{keywords::get_keyword_token_type, token::Token, tokentype::{Literal, TokenType}};
+use super::{
+    keywords::get_keyword_token_type,
+    token::Token,
+    tokentype::{Literal, TokenType},
+};
 use crate::error::ErrorReporter;
 
 pub struct Scanner<'a> {

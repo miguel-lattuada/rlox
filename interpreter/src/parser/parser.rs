@@ -1,22 +1,42 @@
-use std::cell::Cell;
+use std::{cell::Cell, error::Error, fmt::Display};
 
-use crate::ast::{
-    expr::{bexpr, gexpr, lexpr, uexpr, Expr},
-    token::Token,
-    tokentype::{Literal, TokenType},
+use crate::{
+    ast::{
+        expr::{bexpr, gexpr, lexpr, uexpr, Expr},
+        token::Token,
+        tokentype::{Literal, TokenType},
+    },
+    error::ErrorReporter,
 };
 
-pub struct Parser {
+#[derive(Debug)]
+struct ParseError {
+    message: String,
+}
+impl Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+impl Error for ParseError {}
+
+pub struct Parser<'a> {
     _current: Cell<usize>,
+    _reporter: Option<&'a ErrorReporter>,
     tokens: Vec<Token>,
 }
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn new(tokens: Vec<Token>) -> Self {
         return Self {
+            _reporter: None,
             _current: Cell::new(0),
             tokens,
         };
+    }
+
+    pub fn set_error_reporter(&mut self, reporter: &'a ErrorReporter) {
+        self._reporter = Some(reporter);
     }
 
     /**
@@ -131,7 +151,11 @@ impl Parser {
                 }
                 TokenType::LeftParen => {
                     let expr = self.expression();
-                    self.consume(TokenType::RightParen, "Expect ')' after expression.");
+
+                    // Panics if unwraps on Err
+                    self.consume(TokenType::RightParen, "Expect ')' after expression.")
+                        .unwrap();
+
                     return gexpr(expr);
                 }
                 _ => {}
@@ -160,8 +184,25 @@ impl Parser {
         self.previous()
     }
 
-    fn consume(&self, token_type: TokenType, error: &str) {
-        // TODO: implement
+    fn consume(&self, token_type: TokenType, error: &str) -> Result<&Token, ParseError> {
+        if self.match_token(vec![token_type]) {
+            return Ok(self.advance());
+        }
+
+        Err(ParseError {
+            message: self.error(self.peek(), error),
+        })
+    }
+
+    fn error(&self, token: &Token, message: &str) -> String {
+        match self._reporter {
+            Some(reporter) => reporter.error(token, message),
+
+            // Reporter does not exist, print to stderr
+            None => eprintln!("[Error]: {}", message),
+        }
+
+        message.to_string()
     }
 
     fn check(&self, token_type: TokenType) -> bool {

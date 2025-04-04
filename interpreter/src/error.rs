@@ -1,5 +1,7 @@
 use std::cell::Cell;
 
+use crate::ast::{token::Token, tokentype::TokenType};
+
 pub struct ErrorReporter {
     has_error: Cell<bool>,
 }
@@ -19,8 +21,12 @@ impl ErrorReporter {
         self.has_error.set(false);
     }
 
-    pub fn error(&self, line: usize, message: &str) {
-        self.report(line, "", message);
+    pub fn error(&self, token: &Token, message: &str) {
+        if token.token_type == TokenType::Eof {
+            self.report(token.line, " at end", message);
+        } else {
+            self.report(token.line, &format!("at '{}'", token.lexeme), message);
+        }
     }
 
     pub fn report(&self, line: usize, place: &str, message: &str) {

@@ -1,4 +1,5 @@
 mod printer;
+mod parser;
 
 pub fn example() {
     use crate::ast::{

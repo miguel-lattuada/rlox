@@ -3,9 +3,5 @@
 version = 4
 
 [[package]]
-name = "bytecode"
-version = "0.1.0"
-
-[[package]]
-name = "interpreter"
+name = "rlox"
 version = "0.1.0"

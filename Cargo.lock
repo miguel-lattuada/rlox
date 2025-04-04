@@ -7,5 +7,9 @@ name = "bytecode"
 version = "0.1.0"
 
 [[package]]
+name = "common"
+version = "0.1.0"
+
+[[package]]
 name = "interpreter"
 version = "0.1.0"

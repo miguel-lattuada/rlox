@@ -194,15 +194,24 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn error(&self, token: &Token, message: &str) -> String {
-        match self._reporter {
-            Some(reporter) => reporter.error(token, message),
+    fn synchronize(&self) {
+        use crate::ast::tokentype::TokenType::*;
+        self.advance();
 
-            // Reporter does not exist, print to stderr
-            None => eprintln!("[Error]: {}", message),
+        while !self.is_at_end() {
+            if self.previous().token_type == TokenType::Semicolon {
+                return;
+            }
+
+            match self.peek().token_type {
+                Class | Fun | Var | For | If | While | Print | Return => {
+                    return;
+                }
+                _ => {
+                    self.advance();
+                }
+            }
         }
-
-        message.to_string()
     }
 
     fn check(&self, token_type: TokenType) -> bool {
@@ -222,5 +231,16 @@ impl<'a> Parser<'a> {
 
     fn previous(&self) -> &Token {
         self.tokens.get(self._current.get() - 1).unwrap()
+    }
+
+    fn error(&self, token: &Token, message: &str) -> String {
+        match self._reporter {
+            Some(reporter) => reporter.error(token, message),
+
+            // Reporter does not exist, print to stderr
+            None => eprintln!("[Error]: {}", message),
+        }
+
+        message.to_string()
     }
 }

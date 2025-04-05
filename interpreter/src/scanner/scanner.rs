@@ -243,8 +243,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn add_token(&mut self, token: TokenType) {
-        let token = Token::new(token, "", None, self._line);
-        self.tokens.push(token);
+        self.add_token_literal(token, None);
     }
 
     fn add_token_literal(&mut self, token: TokenType, literal: Option<Literal>) {

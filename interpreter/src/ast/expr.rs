@@ -10,6 +10,7 @@ pub trait Visitor<T> {
     fn visit_unary_expr(&mut self, expr: &Expr) -> T;
 }
 
+#[derive(Debug)]
 pub enum Expr {
     BinaryExpr(Box<Expr>, Token, Box<Expr>),
     GroupingExpr(Box<Expr>),

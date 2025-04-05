@@ -9,17 +9,13 @@ impl AstPrinter {
 
     fn parenthesize(&mut self, name: &String, expr: Vec<&Expr>) -> String {
         let mut result = String::new();
-
         result.push('(');
         result.push_str(name);
-
         for e in expr {
             result.push(' ');
             result.push_str(e.accept(self).as_str());
         }
-
         result.push(')');
-
         result
     }
 }

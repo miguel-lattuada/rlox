@@ -33,6 +33,7 @@ impl Runner {
         }
 
         if let Some(expression) = parser.parse() {
+            eprintln!("{:?}", expression);
             println!("{}", AstPrinter {}.print(&expression));
         }
     }

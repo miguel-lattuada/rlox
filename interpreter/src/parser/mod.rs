@@ -1,5 +1,8 @@
-mod printer;
 mod parser;
+mod printer;
+
+pub use parser::Parser;
+pub use printer::AstPrinter;
 
 pub fn example() {
     use crate::ast::{
@@ -7,8 +10,6 @@ pub fn example() {
         token::Token,
         tokentype::{Literal, TokenType},
     };
-
-    use printer::AstPrinter;
 
     let expression = bexpr(
         uexpr(

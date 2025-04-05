@@ -258,7 +258,7 @@ impl<'a> Scanner<'a> {
             Some(reporter) => reporter.report(line, place, message),
 
             // Reporter does not exist, print to stderr
-            None => eprintln!("[line {}] Error{}: {}", line, place, message),
+            None => eprintln!("[line {}] Error {}: {}", line, place, message),
         }
     }
 }

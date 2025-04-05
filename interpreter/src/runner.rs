@@ -1,4 +1,5 @@
 use crate::error::ErrorReporter;
+use crate::parser::{AstPrinter, Parser};
 use crate::scanner::Scanner;
 use std::{fs, io, io::Write, process};
 
@@ -16,11 +17,23 @@ impl Runner {
     fn run(&self, source: String) {
         let mut scanner = Scanner::new(&source);
         scanner.set_error_reporter(&self.error_reporter);
-
         let tokens = scanner.scan_tokens();
 
-        for token in tokens {
-            println!("{:?}", token);
+        // Error while scanning
+        if self.error_reporter.has_error() {
+            return;
+        }
+
+        let mut parser = Parser::new(tokens);
+        parser.set_error_reporter(&self.error_reporter);
+
+        // Error while parsing
+        if self.error_reporter.has_error() {
+            return;
+        }
+
+        if let Some(expression) = parser.parse() {
+            println!("{}", AstPrinter {}.print(&expression));
         }
     }
 

@@ -30,7 +30,7 @@ impl ErrorReporter {
     }
 
     pub fn report(&self, line: usize, place: &str, message: &str) {
-        eprintln!("[line {}] Error{}: {}", line, place, message);
+        eprintln!("[line {}] Error {}: {}", line, place, message);
         self.has_error.set(true);
     }
 }

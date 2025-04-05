@@ -39,32 +39,39 @@ impl<'a> Parser<'a> {
         self._reporter = Some(reporter);
     }
 
+    pub fn parse(&self) -> Option<Expr> {
+        if let Ok(expression) = self.expression() {
+            return Some(expression);
+        }
+        None
+    }
+
     /**
      * Parse grammar rule: expression    → equality
      */
-    pub fn expression(&self) -> Expr {
+    fn expression(&self) -> Result<Expr, ParseError> {
         self.equality()
     }
 
     /**
      * Parse grammar rule: equality       → comparison ( ( "!=" | "==" ) comparison )* ;
      */
-    pub fn equality(&self) -> Expr {
-        let mut expr = self.comparison();
+    fn equality(&self) -> Result<Expr, ParseError> {
+        let mut expr = self.comparison()?;
 
         while self.match_token(vec![TokenType::BangEqual, TokenType::EqualEqual]) {
             let operator = self.previous();
-            let right = self.comparison();
+            let right = self.comparison()?;
             expr = bexpr(expr, operator.clone(), right);
         }
-        expr
+        Ok(expr)
     }
 
     /**
      * Parse grammar rule: comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
      */
-    pub fn comparison(&self) -> Expr {
-        let mut expr = self.term();
+    fn comparison(&self) -> Result<Expr, ParseError> {
+        let mut expr = self.term()?;
 
         while self.match_token(vec![
             TokenType::Greater,
@@ -73,49 +80,49 @@ impl<'a> Parser<'a> {
             TokenType::LessEqual,
         ]) {
             let operator = self.previous();
-            let right = self.term();
+            let right = self.term()?;
             expr = bexpr(expr, operator.clone(), right)
         }
-        expr
+        Ok(expr)
     }
 
     /**
      * Parse grammar rule: term           → factor ( ( "-" | "+" ) factor )* ;
      */
-    pub fn term(&self) -> Expr {
-        let mut expr = self.factor();
+    fn term(&self) -> Result<Expr, ParseError> {
+        let mut expr = self.factor()?;
 
         while self.match_token(vec![TokenType::Minus, TokenType::Plus]) {
             let operator = self.previous();
-            let right = self.factor();
+            let right = self.factor()?;
             expr = bexpr(expr, operator.clone(), right);
         }
-        expr
+        Ok(expr)
     }
 
     /**
      * Parse grammar rule: factor         → unary ( ( "/" | "*" ) unary )* ;
      */
-    pub fn factor(&self) -> Expr {
-        let mut expr = self.unary();
+    fn factor(&self) -> Result<Expr, ParseError> {
+        let mut expr = self.unary()?;
 
         while self.match_token(vec![TokenType::Slash, TokenType::Star]) {
             let operator = self.previous();
-            let right = self.unary();
+            let right = self.unary()?;
             expr = bexpr(expr, operator.clone(), right);
         }
-        expr
+        Ok(expr)
     }
 
     /**
      * Parse grammar rule: unary          → ( "!" | "-" ) unary
      *                                      | primary ;
      */
-    pub fn unary(&self) -> Expr {
+    fn unary(&self) -> Result<Expr, ParseError> {
         if self.match_token(vec![TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous();
-            let right = self.unary();
-            return uexpr(operator.clone(), right);
+            let right = self.unary()?;
+            return Ok(uexpr(operator.clone(), right));
         }
         self.primary()
     }
@@ -124,7 +131,7 @@ impl<'a> Parser<'a> {
      * Parse grammer rule: primary        → NUMBER | STRING | "true" | "false" | "nil"
      *                                      | "(" expression ")" ;
      */
-    pub fn primary(&self) -> Expr {
+    fn primary(&self) -> Result<Expr, ParseError> {
         if self.match_token(vec![
             TokenType::True,
             TokenType::False,
@@ -137,33 +144,34 @@ impl<'a> Parser<'a> {
 
             match previous.token_type {
                 TokenType::True => {
-                    return lexpr(Literal::Boolean(true));
+                    return Ok(lexpr(Literal::Boolean(true)));
                 }
                 TokenType::False => {
-                    return lexpr(Literal::Boolean(false));
+                    return Ok(lexpr(Literal::Boolean(false)));
                 }
                 TokenType::Nil => {
-                    return lexpr(Literal::Nil);
+                    return Ok(lexpr(Literal::Nil));
                 }
                 TokenType::String | TokenType::Number => {
                     let literal = previous.literal.clone();
-                    return lexpr(literal.unwrap());
+                    return Ok(lexpr(literal.unwrap()));
                 }
                 TokenType::LeftParen => {
-                    let expr = self.expression();
+                    let expr = self.expression()?;
 
                     // Panics if unwraps on Err
                     self.consume(TokenType::RightParen, "Expect ')' after expression.")
                         .unwrap();
 
-                    return gexpr(expr);
+                    return Ok(gexpr(expr));
                 }
                 _ => {}
             }
         }
 
-        // INFO: default to Nil expression for now
-        lexpr(Literal::Nil)
+        Err(ParseError {
+            message: self.error(self.peek(), "Expected expression."),
+        })
     }
 
     fn match_token(&self, types: Vec<TokenType>) -> bool {

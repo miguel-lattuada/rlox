@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use super::token::Token;
 use super::tokentype::Literal;
 

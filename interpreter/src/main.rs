@@ -1,16 +1,14 @@
 use std::{env, process};
 
-mod error;
-mod runner;
 mod ast;
-mod scanner;
+mod error;
 mod parser;
+mod runner;
+mod scanner;
 
 use runner::Runner;
 
 fn main() {
-    parser::example();
-
     let args = env::args().collect::<Vec<String>>();
 
     if args.len() > 2 {

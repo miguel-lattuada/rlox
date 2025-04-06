@@ -1,5 +1,5 @@
 use crate::error::ErrorReporter;
-use crate::parser::{AstPrinter, Parser};
+use crate::parser::{AstPrinter, Interpreter, Parser};
 use crate::scanner::Scanner;
 use std::{fs, io, io::Write, process};
 
@@ -33,8 +33,10 @@ impl Runner {
         }
 
         if let Some(expression) = parser.parse() {
-            eprintln!("{:?}", expression);
-            println!("{}", AstPrinter {}.print(&expression));
+            // eprintln!("{:?}", expression);
+            // println!("{}", AstPrinter {}.print(&expression));
+
+            println!("{:?}", Interpreter {}.evaluate(&expression));
         }
     }
 

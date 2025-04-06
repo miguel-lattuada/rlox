@@ -1,5 +1,5 @@
 use crate::error::RuntimeError;
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 
 #[derive(Debug, Clone)]
 pub enum Object {

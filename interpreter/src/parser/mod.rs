@@ -3,6 +3,7 @@ mod object;
 mod parser;
 mod printer;
 
+pub use interpreter::Interpreter;
 pub use parser::Parser;
 pub use printer::AstPrinter;
 

@@ -1,3 +1,5 @@
+mod interpreter;
+mod object;
 mod parser;
 mod printer;
 

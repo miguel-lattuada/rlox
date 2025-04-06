@@ -1,6 +1,6 @@
-use std::cell::Cell;
-
 use crate::ast::{token::Token, tokentype::TokenType};
+use std::cell::Cell;
+use std::{error::Error, fmt::Display};
 
 pub struct ErrorReporter {
     has_error: Cell<bool>,
@@ -34,3 +34,25 @@ impl ErrorReporter {
         self.has_error.set(true);
     }
 }
+
+#[derive(Debug)]
+pub struct ParseError {
+    pub message: String,
+}
+impl Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+impl Error for ParseError {}
+
+#[derive(Debug)]
+pub struct RuntimeError {
+    pub message: String,
+}
+impl Display for RuntimeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+impl Error for RuntimeError {}

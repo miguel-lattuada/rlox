@@ -1,4 +1,4 @@
-use std::{cell::Cell, error::Error, fmt::Display};
+use std::cell::Cell;
 
 use crate::{
     ast::{
@@ -6,19 +6,8 @@ use crate::{
         token::Token,
         tokentype::{Literal, TokenType},
     },
-    error::ErrorReporter,
+    error::{ErrorReporter, ParseError},
 };
-
-#[derive(Debug)]
-struct ParseError {
-    message: String,
-}
-impl Display for ParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-impl Error for ParseError {}
 
 pub struct Parser<'a> {
     _current: Cell<usize>,

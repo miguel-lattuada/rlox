@@ -225,7 +225,7 @@ impl<'a> Parser<'a> {
     }
 
     fn consume(&self, token_type: TokenType, error: &str) -> Result<&Token, ParseError> {
-        if self.match_token(vec![token_type]) {
+        if self.check(token_type) {
             return Ok(self.advance());
         }
 

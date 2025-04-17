@@ -1,6 +1,3 @@
-use core::panic::PanicMessage;
-use std::error::Error;
-
 use super::object::Object;
 use crate::ast::token::Token;
 use crate::ast::tokentype::{Literal, TokenType};

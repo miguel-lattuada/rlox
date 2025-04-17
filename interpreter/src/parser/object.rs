@@ -30,27 +30,6 @@ impl From<Object> for String {
     }
 }
 
-impl TryFrom<Object> for f64 {
-    type Error = RuntimeError;
-
-    fn try_from(value: Object) -> Result<Self, Self::Error> {
-        match value {
-            Object::Number(number) => Ok(number),
-            Object::Boolean(boolean) => {
-                if boolean {
-                    Ok(1.0)
-                } else {
-                    Ok(0.0)
-                }
-            }
-            Object::Nil => Ok(0.0),
-            _ => Err(RuntimeError {
-                message: format!("cannot convert [{:?}] to a number", value),
-            }),
-        }
-    }
-}
-
 impl PartialEq for Object {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {

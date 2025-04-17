@@ -27,17 +27,17 @@ impl Runner {
         let mut parser = Parser::new(tokens);
         parser.set_error_reporter(&self.error_reporter);
 
+        let statements = parser.parse();
+
         // Error while parsing
         if self.error_reporter.has_error() {
             return;
         }
 
-        if let Some(expression) = parser.parse() {
-            // eprintln!("{:?}", expression);
-            // println!("{}", AstPrinter {}.print(&expression));
+        let mut interpreter = Interpreter::new();
+        interpreter.set_error_reporter(&self.error_reporter);
 
-            println!("{:?}", Interpreter {}.evaluate(&expression));
-        }
+        interpreter.interpret(statements);
     }
 
     pub fn run_file(&self, file: &String) {
@@ -48,6 +48,10 @@ impl Runner {
 
         if self.error_reporter.has_error() {
             process::exit(65);
+        }
+
+        if self.error_reporter.has_runtime_error() {
+            process::exit(70);
         }
     }
 

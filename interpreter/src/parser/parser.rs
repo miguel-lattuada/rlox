@@ -3,6 +3,7 @@ use std::cell::Cell;
 use crate::{
     ast::{
         expr::{bexpr, gexpr, lexpr, uexpr, Expr},
+        stmt::{estmt, pstmt, Stmt},
         token::Token,
         tokentype::{Literal, TokenType},
     },
@@ -28,11 +29,52 @@ impl<'a> Parser<'a> {
         self._reporter = Some(reporter);
     }
 
-    pub fn parse(&self) -> Option<Expr> {
-        if let Ok(expression) = self.expression() {
-            return Some(expression);
+    pub fn parse(&self) -> Vec<Stmt> {
+        let mut statements = Vec::new();
+
+        while !self.is_at_end() {
+            let stmt = self
+                .statement()
+                .inspect_err(|e| {
+                    self.error(&e.token, e.message.as_str());
+                })
+                .unwrap();
+            statements.push(stmt);
         }
-        None
+
+        statements
+    }
+
+    /**
+    * Parse grammar rule: statement      → exprStmt
+                                           | printStmt ;
+    */
+    fn statement(&self) -> Result<Stmt, ParseError> {
+        if self.match_token(vec![TokenType::Print]) {
+            return self.print_stmt();
+        }
+
+        self.expression_stmt()
+    }
+
+    /**
+     * Parse grammar rule: printStmt      → "print" expression ";" ;
+     */
+    fn print_stmt(&self) -> Result<Stmt, ParseError> {
+        let value = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+
+        Ok(pstmt(value))
+    }
+
+    /**
+     * Parse grammar rule: exprStmt       → expression ";" ;
+     */
+    fn expression_stmt(&self) -> Result<Stmt, ParseError> {
+        let expr = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+
+        Ok(estmt(expr))
     }
 
     /**
@@ -159,7 +201,8 @@ impl<'a> Parser<'a> {
         }
 
         Err(ParseError {
-            message: self.error(self.peek(), "Expected expression."),
+            token: self.peek().clone(),
+            message: "Expected expression.".to_string(),
         })
     }
 
@@ -187,7 +230,8 @@ impl<'a> Parser<'a> {
         }
 
         Err(ParseError {
-            message: self.error(self.peek(), error),
+            token: self.peek().clone(),
+            message: error.to_string(),
         })
     }
 
@@ -230,14 +274,12 @@ impl<'a> Parser<'a> {
         self.tokens.get(self._current.get() - 1).unwrap()
     }
 
-    fn error(&self, token: &Token, message: &str) -> String {
+    fn error(&self, token: &Token, message: &str) {
         match self._reporter {
             Some(reporter) => reporter.error(token, message),
 
             // Reporter does not exist, print to stderr
             None => eprintln!("[Error]: {}", message),
         }
-
-        message.to_string()
     }
 }

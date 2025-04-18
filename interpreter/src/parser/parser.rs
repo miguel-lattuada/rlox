@@ -1,5 +1,7 @@
 use std::cell::Cell;
 
+use crate::ast::expr::{aexpr, vexpr};
+use crate::ast::stmt::vdstmt;
 use crate::{
     ast::{
         expr::{bexpr, gexpr, lexpr, uexpr, Expr},
@@ -33,16 +35,30 @@ impl<'a> Parser<'a> {
         let mut statements = Vec::new();
 
         while !self.is_at_end() {
-            let stmt = self
-                .statement()
-                .inspect_err(|e| {
+            match self.declaration() {
+                Ok(stmt) => {
+                    statements.push(stmt);
+                }
+                Err(e) => {
                     self.error(&e.token, e.message.as_str());
-                })
-                .unwrap();
-            statements.push(stmt);
+                    self.synchronize();
+                }
+            }
         }
 
         statements
+    }
+
+    /**
+    * Parse grammar rule: declaration    → statement
+                                           | varDecl ;
+    */
+    fn declaration(&self) -> Result<Stmt, ParseError> {
+        if self.match_token(vec![TokenType::Var]) {
+            return self.var_decl_stmt();
+        }
+
+        self.statement()
     }
 
     /**
@@ -55,6 +71,25 @@ impl<'a> Parser<'a> {
         }
 
         self.expression_stmt()
+    }
+
+    /**
+     * Parse grammar rule: varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+     */
+    fn var_decl_stmt(&self) -> Result<Stmt, ParseError> {
+        let token = self.consume(TokenType::Identifier, "Expect variable name.")?;
+        let mut expr = None;
+
+        if self.match_token(vec![TokenType::Equal]) {
+            expr = Some(self.expression()?);
+        }
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        )?;
+
+        Ok(vdstmt(token.clone(), expr))
     }
 
     /**
@@ -81,7 +116,30 @@ impl<'a> Parser<'a> {
      * Parse grammar rule: expression    → equality
      */
     fn expression(&self) -> Result<Expr, ParseError> {
-        self.equality()
+        self.assignment()
+    }
+
+    /**
+    * Parse grammar rule: assignment     → IDENTIFIER "=" assignment
+                                            | equality ;
+    */
+    fn assignment(&self) -> Result<Expr, ParseError> {
+        let expr = self.equality()?;
+
+        if self.match_token(vec![TokenType::Equal]) {
+            let equals = self.previous();
+            let value = self.assignment()?;
+
+            return match expr {
+                Expr::VariableExpr(ref token) => Ok(aexpr(token.clone(), value)),
+                _ => Err(ParseError {
+                    token: equals.clone(),
+                    message: "Invalid assignment target.".to_string(),
+                }),
+            };
+        }
+
+        Ok(expr)
     }
 
     /**
@@ -160,7 +218,8 @@ impl<'a> Parser<'a> {
 
     /**
      * Parse grammer rule: primary        → NUMBER | STRING | "true" | "false" | "nil"
-     *                                      | "(" expression ")" ;
+     *                                      | "(" expression ")"
+     *                                      | IDENTIFIER ;
      */
     fn primary(&self) -> Result<Expr, ParseError> {
         if self.match_token(vec![
@@ -170,6 +229,7 @@ impl<'a> Parser<'a> {
             TokenType::Number,
             TokenType::String,
             TokenType::LeftParen,
+            TokenType::Identifier,
         ]) {
             let previous = self.previous();
 
@@ -187,6 +247,7 @@ impl<'a> Parser<'a> {
                     let literal = previous.literal.clone();
                     return Ok(lexpr(literal.unwrap()));
                 }
+                TokenType::Identifier => return Ok(vexpr(previous.clone())),
                 TokenType::LeftParen => {
                     let expr = self.expression()?;
 

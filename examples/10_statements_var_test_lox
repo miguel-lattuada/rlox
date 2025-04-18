@@ -1,0 +1,3 @@
+var uno = 1;
+var dos = 2;
+print uno + dos;

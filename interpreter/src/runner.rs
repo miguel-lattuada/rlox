@@ -1,5 +1,6 @@
 use crate::error::ErrorReporter;
-use crate::parser::{AstPrinter, Interpreter, Parser};
+use crate::interpreter::Interpreter;
+use crate::parser::Parser;
 use crate::scanner::Scanner;
 use std::{fs, io, io::Write, process};
 
@@ -8,13 +9,13 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn new() -> Runner {
-        Runner {
+    pub fn new() -> Self {
+        Self {
             error_reporter: ErrorReporter::new(),
         }
     }
 
-    fn run(&self, source: String) {
+    fn run(&self, source: String, interpreter: &mut Interpreter) {
         let mut scanner = Scanner::new(&source);
         scanner.set_error_reporter(&self.error_reporter);
         let tokens = scanner.scan_tokens();
@@ -34,17 +35,16 @@ impl Runner {
             return;
         }
 
-        let mut interpreter = Interpreter::new();
-        interpreter.set_error_reporter(&self.error_reporter);
-
         interpreter.interpret(statements);
     }
 
     pub fn run_file(&self, file: &String) {
         let file_bytes = fs::read(file).unwrap();
         let file_str = String::from_utf8(file_bytes).unwrap();
+        let mut interpreter = Interpreter::new();
+        interpreter.set_error_reporter(&self.error_reporter);
 
-        self.run(file_str);
+        self.run(file_str, &mut interpreter);
 
         if self.error_reporter.has_error() {
             process::exit(65);
@@ -56,6 +56,9 @@ impl Runner {
     }
 
     pub fn run_prompt(&mut self) {
+        let mut interpreter = Interpreter::new();
+        interpreter.set_error_reporter(&self.error_reporter);
+
         loop {
             print!("> ");
             io::stdout().flush().unwrap();
@@ -69,7 +72,7 @@ impl Runner {
                 break;
             }
 
-            self.run(line);
+            self.run(line, &mut interpreter);
             self.error_reporter.reset();
         }
     }

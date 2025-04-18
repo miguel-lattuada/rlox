@@ -1,3 +1,4 @@
+use super::environment::Environment;
 use super::object::Object;
 use crate::ast::token::Token;
 use crate::ast::tokentype::{Literal, TokenType};
@@ -7,14 +8,19 @@ use crate::{
     ast::stmt::{Stmt, Visitor as StmtVisitor},
     error::RuntimeError,
 };
+use std::collections::HashMap;
 
 pub struct Interpreter<'a> {
+    env: Environment,
     _reporter: Option<&'a ErrorReporter>,
 }
 
 impl<'a> Interpreter<'a> {
     pub fn new() -> Self {
-        Self { _reporter: None }
+        Self {
+            env: Environment::new(),
+            _reporter: None,
+        }
     }
 
     pub fn interpret(&mut self, stmts: Vec<Stmt>) {
@@ -163,6 +169,19 @@ impl<'a> ExprVisitor<Object> for Interpreter<'a> {
         };
         return Ok(literal);
     }
+
+    fn visit_variable_expr(&mut self, identifier: &Token) -> Result<Object, RuntimeError> {
+        self.env.get(identifier)
+    }
+
+    fn visit_assign_expr(
+        &mut self,
+        identifier: &Token,
+        value: &Expr,
+    ) -> Result<Object, RuntimeError> {
+        let val = self.evaluate(value)?;
+        self.env.assign(identifier, Some(val))
+    }
 }
 
 impl<'a> StmtVisitor<()> for Interpreter<'a> {
@@ -175,6 +194,22 @@ impl<'a> StmtVisitor<()> for Interpreter<'a> {
 
     fn visit_expression_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
         self.evaluate(expr)?;
+        Ok(())
+    }
+
+    fn visit_var_declaration_stmt(
+        &mut self,
+        identifier: &Token,
+        initializer: Option<&Expr>,
+    ) -> Result<(), RuntimeError> {
+        let mut value = None;
+
+        if let Some(expr) = initializer {
+            value = Some(self.evaluate(expr)?);
+        }
+
+        self.env.define(identifier, value);
+
         Ok(())
     }
 }

@@ -12,14 +12,18 @@ pub trait Visitor<T> {
     ) -> Result<T, RuntimeError>;
     fn visit_grouping_expr(&mut self, expr: &Expr) -> Result<T, RuntimeError>;
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<T, RuntimeError>;
+    fn visit_variable_expr(&mut self, identifier: &Token) -> Result<T, RuntimeError>;
+    fn visit_assign_expr(&mut self, identifier: &Token, value: &Expr) -> Result<T, RuntimeError>;
 }
 
 #[derive(Debug)]
 pub enum Expr {
+    AssignExpr(Token, Box<Expr>),
     BinaryExpr(Box<Expr>, Token, Box<Expr>),
     GroupingExpr(Box<Expr>),
     LiteralExpr(Literal),
     UnaryExpr(Token, Box<Expr>),
+    VariableExpr(Token),
 }
 
 impl Expr {
@@ -38,6 +42,8 @@ impl Expr {
             UnaryExpr(ref operator, ref expression) => {
                 visitor.visit_unary_expr(operator, expression)
             }
+            VariableExpr(ref token) => visitor.visit_variable_expr(token),
+            AssignExpr(ref token, ref expr) => visitor.visit_assign_expr(token, expr),
         }
     }
 }
@@ -56,4 +62,12 @@ pub fn lexpr(literal: Literal) -> Expr {
 
 pub fn uexpr(operator: Token, right: Expr) -> Expr {
     Expr::UnaryExpr(operator, Box::new(right))
+}
+
+pub fn vexpr(identifier: Token) -> Expr {
+    Expr::VariableExpr(identifier)
+}
+
+pub fn aexpr(identifier: Token, value: Expr) -> Expr {
+    Expr::AssignExpr(identifier, Box::new(value))
 }

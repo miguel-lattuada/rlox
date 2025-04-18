@@ -1,13 +1,9 @@
-mod interpreter;
-mod object;
 mod parser;
 mod printer;
 
-pub use interpreter::Interpreter;
 pub use parser::Parser;
-pub use printer::AstPrinter;
 
-pub fn example() {
+fn example() {
     use crate::ast::{
         expr::{bexpr, gexpr, lexpr, uexpr},
         token::Token,
@@ -22,6 +18,4 @@ pub fn example() {
         Token::new(TokenType::Star, "*", None, 1),
         gexpr(lexpr(Literal::Number(45.67))),
     );
-
-    println!("{}", AstPrinter {}.print(&expression));
 }

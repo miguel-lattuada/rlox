@@ -60,4 +60,16 @@ impl Visitor<String> for AstPrinter {
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<String, RuntimeError> {
         self.parenthesize(&operator.lexeme, vec![right])
     }
+
+    fn visit_variable_expr(&mut self, identifier: &Token) -> Result<String, RuntimeError> {
+        todo!()
+    }
+
+    fn visit_assign_expr(
+        &mut self,
+        identifier: &Token,
+        value: &Expr,
+    ) -> Result<String, RuntimeError> {
+        todo!()
+    }
 }

@@ -2,6 +2,7 @@ use std::{env, process};
 
 mod ast;
 mod error;
+mod interpreter;
 mod parser;
 mod runner;
 mod scanner;

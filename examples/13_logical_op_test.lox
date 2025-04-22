@@ -1,0 +1,4 @@
+print "2";
+print "2" or "yes";
+print nil or "yes";
+print nil or nil;

@@ -1,7 +1,7 @@
 use std::cell::Cell;
 
-use crate::ast::expr::{aexpr, vexpr};
-use crate::ast::stmt::vdstmt;
+use crate::ast::expr::{aexpr, lgexpr, vexpr};
+use crate::ast::stmt::{ifstmt, vdstmt};
 use crate::{
     ast::{
         expr::{bexpr, gexpr, lexpr, uexpr, Expr},
@@ -66,6 +66,10 @@ impl<'a> Parser<'a> {
                                            | printStmt ;
     */
     fn statement(&self) -> Result<Stmt, ParseError> {
+        if self.match_token(vec![TokenType::If]) {
+            return self.if_stmt();
+        }
+
         if self.match_token(vec![TokenType::Print]) {
             return self.print_stmt();
         }
@@ -92,6 +96,26 @@ impl<'a> Parser<'a> {
         self.consume(TokenType::RightBrace, "Expect '}' after block.")?;
 
         Ok(stmts)
+    }
+
+    /**
+    * Parse grammar rule: ifStmt         → "if" "(" expression ")" statement
+                                            ( "else" statement )? ;
+    */
+    fn if_stmt(&self) -> Result<Stmt, ParseError> {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'if'.")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expect ')' after if condition.")?;
+
+        let then_branch = self.statement()?;
+
+        let mut else_branch: Option<Stmt> = None;
+
+        if self.match_token(vec![TokenType::Else]) {
+            else_branch = Some(self.statement()?);
+        }
+
+        return Ok(ifstmt(condition, then_branch, else_branch));
     }
 
     /**
@@ -145,7 +169,7 @@ impl<'a> Parser<'a> {
                                             | equality ;
     */
     fn assignment(&self) -> Result<Expr, ParseError> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.match_token(vec![TokenType::Equal]) {
             let equals = self.previous();
@@ -160,6 +184,34 @@ impl<'a> Parser<'a> {
             };
         }
 
+        Ok(expr)
+    }
+
+    /**
+     * Parse grammar rule: logic_or       → logic_and ( "or" logic_and )* ;
+     */
+    fn or(&self) -> Result<Expr, ParseError> {
+        let mut expr = self.and()?;
+
+        while self.match_token(vec![TokenType::Or]) {
+            let operator = self.previous();
+            let right = self.and()?;
+            expr = lgexpr(expr, operator.clone(), right);
+        }
+        Ok(expr)
+    }
+
+    /**
+     * Parse grammar rule: logic_and      → equality ( "and" equality )* ;
+     */
+    fn and(&self) -> Result<Expr, ParseError> {
+        let mut expr = self.equality()?;
+
+        while self.match_token(vec![TokenType::And]) {
+            let operator = self.previous();
+            let right = self.equality()?;
+            expr = lgexpr(expr, operator.clone(), right);
+        }
         Ok(expr)
     }
 

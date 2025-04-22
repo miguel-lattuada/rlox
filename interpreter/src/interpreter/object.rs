@@ -18,6 +18,16 @@ impl From<Object> for bool {
     }
 }
 
+impl From<&Object> for bool {
+    fn from(object: &Object) -> Self {
+        match object {
+            Object::Boolean(boolean) => boolean.clone(),
+            Object::Nil => false,
+            _ => true,
+        }
+    }
+}
+
 impl From<Object> for String {
     fn from(object: Object) -> Self {
         match object {

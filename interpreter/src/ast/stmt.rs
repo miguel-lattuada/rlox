@@ -12,6 +12,12 @@ pub trait Visitor<T> {
         initializer: Option<&Expr>,
     ) -> Result<T, RuntimeError>;
     fn visit_block_stmt(&mut self, stmts: &Vec<Stmt>) -> Result<T, RuntimeError>;
+    fn visit_if_stmt(
+        &mut self,
+        expr: &Expr,
+        stmt_then: &Stmt,
+        stmt_else: &Option<Box<Stmt>>,
+    ) -> Result<T, RuntimeError>;
 }
 
 #[derive(Debug)]
@@ -20,6 +26,7 @@ pub enum Stmt {
     Expression(Expr),
     VarDeclaration(Token, Option<Expr>),
     Block(Vec<Stmt>),
+    If(Expr, Box<Stmt>, Option<Box<Stmt>>),
 }
 
 impl Stmt {
@@ -35,6 +42,9 @@ impl Stmt {
                 visitor.visit_var_declaration_stmt(identifier, initializer.as_ref())
             }
             Block(ref stmts) => visitor.visit_block_stmt(stmts),
+            If(ref expr, ref stmt_then, ref stmt_else) => {
+                visitor.visit_if_stmt(expr, stmt_then, stmt_else)
+            }
         }
     }
 }
@@ -49,4 +59,12 @@ pub fn estmt(expr: Expr) -> Stmt {
 
 pub fn vdstmt(token: Token, initializer: Option<Expr>) -> Stmt {
     Stmt::VarDeclaration(token, initializer)
+}
+
+pub fn ifstmt(expr: Expr, stmt_then: Stmt, stmt_else: Option<Stmt>) -> Stmt {
+    Stmt::If(
+        expr,
+        Box::new(stmt_then),
+        Some(Box::new(stmt_else.unwrap())),
+    )
 }

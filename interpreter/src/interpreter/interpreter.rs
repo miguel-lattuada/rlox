@@ -8,6 +8,7 @@ use crate::{
     ast::stmt::{Stmt, Visitor as StmtVisitor},
     error::RuntimeError,
 };
+use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -201,6 +202,24 @@ impl<'a> ExprVisitor<Object> for Interpreter<'a> {
         let val = self.evaluate(value)?;
         self.env.borrow_mut().assign(identifier, Some(val))
     }
+
+    fn visit_logical_expr(
+        &mut self,
+        left: &Expr,
+        operator: &Token,
+        right: &Expr,
+    ) -> Result<Object, RuntimeError> {
+        let left = self.evaluate(left)?;
+        let boolean_value = bool::from(&left);
+
+        if (operator.token_type == TokenType::Or && boolean_value)
+            || (operator.token_type == TokenType::And && !boolean_value)
+        {
+            return Ok(left);
+        }
+
+        return self.evaluate(right);
+    }
 }
 
 impl<'a> StmtVisitor<()> for Interpreter<'a> {
@@ -236,6 +255,24 @@ impl<'a> StmtVisitor<()> for Interpreter<'a> {
     fn visit_block_stmt(&mut self, stmts: &Vec<Stmt>) -> Result<(), RuntimeError> {
         let clone = Rc::clone(&self.env);
         self.execute_block(stmts, Environment::new(Some(clone)))?;
+        Ok(())
+    }
+
+    fn visit_if_stmt(
+        &mut self,
+        expr: &Expr,
+        stmt_then: &Stmt,
+        stmt_else: &Option<Box<Stmt>>,
+    ) -> Result<(), RuntimeError> {
+        let condition_result = self.evaluate(expr)?;
+        let boolean_result = bool::from(condition_result);
+
+        if boolean_result {
+            self.execute(stmt_then)?;
+        } else if let Some(_else) = stmt_else {
+            self.execute(_else)?;
+        }
+
         Ok(())
     }
 }

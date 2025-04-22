@@ -70,7 +70,28 @@ impl<'a> Parser<'a> {
             return self.print_stmt();
         }
 
+        if self.match_token(vec![TokenType::LeftBrace]) {
+            let stmts = self.block()?;
+            return Ok(Stmt::Block(stmts));
+        }
+
         self.expression_stmt()
+    }
+
+    /**
+     * Parse grammar rule: block          → "{" declaration* "}" ;
+     */
+    fn block(&self) -> Result<Vec<Stmt>, ParseError> {
+        let mut stmts = vec![];
+
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+            let stmt = self.declaration()?;
+            stmts.push(stmt);
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}' after block.")?;
+
+        Ok(stmts)
     }
 
     /**

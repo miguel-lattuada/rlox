@@ -1,15 +1,19 @@
 use super::object::Object;
 use crate::ast::token::Token;
 use crate::error::RuntimeError;
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 pub struct Environment {
+    enclosing: Option<Rc<RefCell<Environment>>>,
     values: HashMap<String, Option<Object>>,
 }
 
 impl Environment {
-    pub fn new() -> Self {
+    pub fn new(enclosing: Option<Rc<RefCell<Environment>>>) -> Self {
         Self {
+            enclosing,
             values: HashMap::new(),
         }
     }
@@ -24,11 +28,17 @@ impl Environment {
         value: Option<Object>,
     ) -> Result<Object, RuntimeError> {
         match self.values.get(&identifier.lexeme) {
-            Some(old_value) => {
+            Some(_old_value) => {
                 self.values.insert(identifier.lexeme.clone(), value.clone());
                 Ok(value.unwrap())
             }
-            None => self.undefined(identifier.clone()),
+            None => {
+                if let Some(ref env) = self.enclosing {
+                    return env.borrow_mut().assign(identifier, value);
+                }
+
+                self.undefined(identifier.clone())
+            }
         }
     }
 
@@ -40,7 +50,12 @@ impl Environment {
                 }
                 self.uninitialized(identifier.clone())
             }
-            None => self.undefined(identifier.clone()),
+            None => {
+                if let Some(ref env) = self.enclosing {
+                    return env.borrow().get(identifier);
+                }
+                self.undefined(identifier.clone())
+            }
         }
     }
 

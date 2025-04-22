@@ -38,7 +38,7 @@ impl Expr {
             BinaryExpr(ref left, ref operator, ref right) => {
                 visitor.visit_binary_expr(left, operator, right)
             }
-            GroupingExpr(ref expression) => visitor.visit_grouping_expr(self),
+            GroupingExpr(ref _expression) => visitor.visit_grouping_expr(self),
             UnaryExpr(ref operator, ref expression) => {
                 visitor.visit_unary_expr(operator, expression)
             }

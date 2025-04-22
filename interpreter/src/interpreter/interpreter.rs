@@ -8,17 +8,18 @@ use crate::{
     ast::stmt::{Stmt, Visitor as StmtVisitor},
     error::RuntimeError,
 };
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct Interpreter<'a> {
-    env: Environment,
+    env: Rc<RefCell<Environment>>,
     _reporter: Option<&'a ErrorReporter>,
 }
 
 impl<'a> Interpreter<'a> {
     pub fn new() -> Self {
         Self {
-            env: Environment::new(),
+            env: Rc::new(RefCell::new(Environment::new(None))),
             _reporter: None,
         }
     }
@@ -39,6 +40,24 @@ impl<'a> Interpreter<'a> {
 
     fn execute(&mut self, stmt: &Stmt) -> Result<(), RuntimeError> {
         stmt.accept(self)
+    }
+
+    fn execute_block(&mut self, stmts: &Vec<Stmt>, env: Environment) -> Result<(), RuntimeError> {
+        let prev_env = Rc::clone(&self.env);
+
+        self.env = Rc::new(RefCell::new(env));
+
+        for stmt in stmts {
+            if let Ok(()) = self.execute(stmt) {
+                continue;
+            } else {
+                break;
+            }
+        }
+
+        self.env = prev_env;
+
+        Ok(())
     }
 
     fn evaluate(&mut self, expr: &Expr) -> Result<Object, RuntimeError> {
@@ -171,7 +190,7 @@ impl<'a> ExprVisitor<Object> for Interpreter<'a> {
     }
 
     fn visit_variable_expr(&mut self, identifier: &Token) -> Result<Object, RuntimeError> {
-        self.env.get(identifier)
+        self.env.borrow().get(identifier)
     }
 
     fn visit_assign_expr(
@@ -180,7 +199,7 @@ impl<'a> ExprVisitor<Object> for Interpreter<'a> {
         value: &Expr,
     ) -> Result<Object, RuntimeError> {
         let val = self.evaluate(value)?;
-        self.env.assign(identifier, Some(val))
+        self.env.borrow_mut().assign(identifier, Some(val))
     }
 }
 
@@ -208,8 +227,15 @@ impl<'a> StmtVisitor<()> for Interpreter<'a> {
             value = Some(self.evaluate(expr)?);
         }
 
-        self.env.define(identifier, value);
+        // self.env.define(identifier, value);
+        self.env.borrow_mut().define(identifier, value);
 
+        Ok(())
+    }
+
+    fn visit_block_stmt(&mut self, stmts: &Vec<Stmt>) -> Result<(), RuntimeError> {
+        let clone = Rc::clone(&self.env);
+        self.execute_block(stmts, Environment::new(Some(clone)))?;
         Ok(())
     }
 }

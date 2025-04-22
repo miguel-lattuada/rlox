@@ -11,6 +11,7 @@ pub trait Visitor<T> {
         identifier: &Token,
         initializer: Option<&Expr>,
     ) -> Result<T, RuntimeError>;
+    fn visit_block_stmt(&mut self, stmts: &Vec<Stmt>) -> Result<T, RuntimeError>;
 }
 
 #[derive(Debug)]
@@ -18,6 +19,7 @@ pub enum Stmt {
     Print(Expr),
     Expression(Expr),
     VarDeclaration(Token, Option<Expr>),
+    Block(Vec<Stmt>),
 }
 
 impl Stmt {
@@ -32,6 +34,7 @@ impl Stmt {
             VarDeclaration(ref identifier, ref initializer) => {
                 visitor.visit_var_declaration_stmt(identifier, initializer.as_ref())
             }
+            Block(ref stmts) => visitor.visit_block_stmt(stmts),
         }
     }
 }

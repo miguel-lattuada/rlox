@@ -1,7 +1,7 @@
 use std::cell::Cell;
 
 use crate::ast::expr::{aexpr, lgexpr, vexpr};
-use crate::ast::stmt::{ifstmt, vdstmt};
+use crate::ast::stmt::{ifstmt, vdstmt, wstmt};
 use crate::{
     ast::{
         expr::{bexpr, gexpr, lexpr, uexpr, Expr},
@@ -66,12 +66,20 @@ impl<'a> Parser<'a> {
                                            | printStmt ;
     */
     fn statement(&self) -> Result<Stmt, ParseError> {
+        if self.match_token(vec![TokenType::For]) {
+            return self.for_stmt();
+        }
+
         if self.match_token(vec![TokenType::If]) {
             return self.if_stmt();
         }
 
         if self.match_token(vec![TokenType::Print]) {
             return self.print_stmt();
+        }
+
+        if self.match_token(vec![TokenType::While]) {
+            return self.while_stmt();
         }
 
         if self.match_token(vec![TokenType::LeftBrace]) {
@@ -116,6 +124,67 @@ impl<'a> Parser<'a> {
         }
 
         return Ok(ifstmt(condition, then_branch, else_branch));
+    }
+
+    /**
+    * Parse grammar rule: forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+                                            expression? ";"
+                                            expression? ")" statement ;
+    */
+    fn for_stmt(&self) -> Result<Stmt, ParseError> {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'for'.")?;
+
+        let mut initializer: Option<Stmt> = None;
+        if self.match_token(vec![TokenType::Semicolon]) {
+            initializer = None;
+        } else if self.match_token(vec![TokenType::Var]) {
+            initializer = Some(self.var_decl_stmt()?);
+        } else {
+            initializer = Some(self.expression_stmt()?);
+        }
+
+        let mut condition: Option<Expr> = None;
+        if !self.check(TokenType::Semicolon) {
+            condition = Some(self.expression()?);
+        }
+        self.consume(TokenType::Semicolon, "Expect ';' after loop condition.")?;
+
+        let mut increment: Option<Expr> = None;
+        if !self.check(TokenType::RightParen) {
+            increment = Some(self.expression()?);
+        }
+        self.consume(TokenType::RightParen, "Expect ')' after for clauses.")?;
+
+        let mut body = self.statement()?;
+
+        if let Some(_increment) = increment {
+            body = Stmt::Block(vec![body, estmt(_increment)]);
+        }
+
+        if let Some(_condition) = condition {
+            body = wstmt(_condition, body);
+        } else {
+            body = wstmt(lexpr(Literal::Boolean(true)), body);
+        }
+
+        if let Some(_initializer) = initializer {
+            body = Stmt::Block(vec![_initializer, body]);
+        }
+
+        Ok(body)
+    }
+
+    /**
+     * Parse grammar rule: whileStmt      → "while" "(" expression ")" statement ;
+     */
+    fn while_stmt(&self) -> Result<Stmt, ParseError> {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'while'.")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expect ')' after while condition.")?;
+
+        let body = self.statement()?;
+
+        return Ok(wstmt(condition, body));
     }
 
     /**

@@ -18,6 +18,7 @@ pub trait Visitor<T> {
         stmt_then: &Stmt,
         stmt_else: &Option<Box<Stmt>>,
     ) -> Result<T, RuntimeError>;
+    fn visit_while_stmt(&mut self, expr: &Expr, stmt: &Stmt) -> Result<T, RuntimeError>;
 }
 
 #[derive(Debug)]
@@ -27,6 +28,7 @@ pub enum Stmt {
     VarDeclaration(Token, Option<Expr>),
     Block(Vec<Stmt>),
     If(Expr, Box<Stmt>, Option<Box<Stmt>>),
+    While(Expr, Box<Stmt>),
 }
 
 impl Stmt {
@@ -45,6 +47,7 @@ impl Stmt {
             If(ref expr, ref stmt_then, ref stmt_else) => {
                 visitor.visit_if_stmt(expr, stmt_then, stmt_else)
             }
+            While(ref expr, ref stmt) => visitor.visit_while_stmt(expr, stmt),
         }
     }
 }
@@ -67,4 +70,8 @@ pub fn ifstmt(expr: Expr, stmt_then: Stmt, stmt_else: Option<Stmt>) -> Stmt {
         Box::new(stmt_then),
         Some(Box::new(stmt_else.unwrap())),
     )
+}
+
+pub fn wstmt(expr: Expr, stmt: Stmt) -> Stmt {
+    Stmt::While(expr, Box::new(stmt))
 }

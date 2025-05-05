@@ -275,4 +275,11 @@ impl<'a> StmtVisitor<()> for Interpreter<'a> {
 
         Ok(())
     }
+
+    fn visit_while_stmt(&mut self, expr: &Expr, stmt: &Stmt) -> Result<(), RuntimeError> {
+        while bool::from(self.evaluate(expr)?) {
+            self.execute(stmt)?;
+        }
+        Ok(())
+    }
 }

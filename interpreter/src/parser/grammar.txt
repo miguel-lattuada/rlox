@@ -2,9 +2,15 @@ program        → declaration* EOF ;
 declaration    → statement
                | varDecl ;
 statement      → exprStmt
+               | forStmt
                | ifStmt
                | printStmt
+               | whileStmt
                | block ;
+forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+                 expression? ";"
+                 expression? ")" statement ;
+whileStmt      → "while" "(" expression ")" statement ;
 block          → "{" declaration* "}" ;
 exprStmt       → expression ";" ;
 ifStmt         → "if" "(" expression ")" statement

@@ -44,7 +44,7 @@ impl<'a> Scanner<'a> {
         let eof_token = Token::new(TokenType::Eof, "", None, 0);
         self.tokens.push(eof_token);
 
-        return self.tokens.clone();
+        self.tokens.clone()
     }
 
     fn scan_token(&mut self) {
@@ -211,7 +211,7 @@ impl<'a> Scanner<'a> {
         match token {
             Some(token) if *token == expected => {
                 self._current += 1;
-                return true;
+                true
             }
             _ => false,
         }

@@ -20,11 +20,11 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(tokens: Vec<Token>) -> Self {
-        return Self {
+        Self {
             _reporter: None,
             _current: Cell::new(0),
             tokens,
-        };
+        }
     }
 
     pub fn set_error_reporter(&mut self, reporter: &'a ErrorReporter) {
@@ -157,18 +157,18 @@ impl<'a> Parser<'a> {
 
         let mut body = self.statement()?;
 
-        if let Some(_increment) = increment {
-            body = Stmt::Block(vec![body, estmt(_increment)]);
+        if let Some(i) = increment {
+            body = Stmt::Block(vec![body, estmt(i)]);
         }
 
-        if let Some(_condition) = condition {
-            body = wstmt(_condition, body);
+        if let Some(c) = condition {
+            body = wstmt(c, body);
         } else {
             body = wstmt(lexpr(Literal::Boolean(true)), body);
         }
 
-        if let Some(_initializer) = initializer {
-            body = Stmt::Block(vec![_initializer, body]);
+        if let Some(init) = initializer {
+            body = Stmt::Block(vec![init, body]);
         }
 
         Ok(body)
@@ -184,7 +184,7 @@ impl<'a> Parser<'a> {
 
         let body = self.statement()?;
 
-        return Ok(wstmt(condition, body));
+        Ok(wstmt(condition, body))
     }
 
     /**

@@ -145,7 +145,7 @@ impl ExprVisitor<Object> for Interpreter<'_> {
 
         match operator.token_type {
             TokenType::Minus | TokenType::Star | TokenType::Slash => {
-                self.math_operation(left_val, right_val, &operator)
+                self.math_operation(left_val, right_val, operator)
             }
             TokenType::Plus => match (&left_val, &right_val) {
                 (Object::Number(left_number), Object::Number(right_number)) => {
@@ -162,25 +162,25 @@ impl ExprVisitor<Object> for Interpreter<'_> {
                 (Object::Number(left_number), Object::Number(right_number)) => {
                     Ok(Object::Boolean(left_number > right_number))
                 }
-                _ => self.non_numeric_operand_error(&operator),
+                _ => self.non_numeric_operand_error(operator),
             },
             TokenType::GreaterEqual => match (left_val, right_val) {
                 (Object::Number(left_number), Object::Number(right_number)) => {
                     Ok(Object::Boolean(left_number >= right_number))
                 }
-                _ => self.non_numeric_operand_error(&operator),
+                _ => self.non_numeric_operand_error(operator),
             },
             TokenType::Less => match (left_val, right_val) {
                 (Object::Number(left_number), Object::Number(right_number)) => {
                     Ok(Object::Boolean(left_number < right_number))
                 }
-                _ => self.non_numeric_operand_error(&operator),
+                _ => self.non_numeric_operand_error(operator),
             },
             TokenType::LessEqual => match (left_val, right_val) {
                 (Object::Number(left_number), Object::Number(right_number)) => {
                     Ok(Object::Boolean(left_number <= right_number))
                 }
-                _ => self.non_numeric_operand_error(&operator),
+                _ => self.non_numeric_operand_error(operator),
             },
             TokenType::BangEqual => Ok(Object::Boolean(left_val != right_val)),
             TokenType::EqualEqual => Ok(Object::Boolean(left_val == right_val)),
@@ -196,7 +196,7 @@ impl ExprVisitor<Object> for Interpreter<'_> {
         match operator.token_type {
             TokenType::Minus => match right_expr_value {
                 Object::Number(n) => Ok(Object::Number(-n)),
-                _ => self.non_numeric_operand_error(&operator),
+                _ => self.non_numeric_operand_error(operator),
             },
             TokenType::Bang => Ok(Object::Boolean(!bool::from(right_expr_value))),
             _ => Err(RuntimeError {

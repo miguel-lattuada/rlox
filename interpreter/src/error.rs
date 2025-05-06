@@ -7,6 +7,12 @@ pub struct ErrorReporter {
     has_runtime_error: Cell<bool>,
 }
 
+impl Default for ErrorReporter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ErrorReporter {
     pub fn new() -> ErrorReporter {
         ErrorReporter {

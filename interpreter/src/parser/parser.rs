@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use crate::ast::expr::{aexpr, lgexpr, vexpr};
+use crate::ast::expr::{aexpr, cexpr, lgexpr, vexpr};
 use crate::ast::stmt::{ifstmt, vdstmt, wstmt};
 use crate::{
     ast::{
@@ -123,7 +123,7 @@ impl<'a> Parser<'a> {
             else_branch = Some(self.statement()?);
         }
 
-        return Ok(ifstmt(condition, then_branch, else_branch));
+        Ok(ifstmt(condition, then_branch, else_branch))
     }
 
     /**
@@ -355,7 +355,50 @@ impl<'a> Parser<'a> {
             let right = self.unary()?;
             return Ok(uexpr(operator.clone(), right));
         }
-        self.primary()
+        self.call()
+    }
+
+    /**
+     * Parse grammar rule: call           → primary ( "(" arguments? ")" )* ;z
+     */
+    fn call(&self) -> Result<Expr, ParseError> {
+        let mut expr = self.primary()?;
+
+        loop {
+            if self.match_token(vec![TokenType::LeftParen]) {
+                expr = self.finish_call(expr)?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    /**
+     * Parse grammar rule: arguments      → expression ( "," expression )* ;
+     */
+    fn finish_call(&self, callee: Expr) -> Result<Expr, ParseError> {
+        let mut args = vec![];
+
+        if !self.check(TokenType::RightParen) {
+            loop {
+                if args.len() > 255 {
+                    return Err(ParseError {
+                        token: self.peek().clone(),
+                        message: "Can't have more than 255 arguments.".to_string(),
+                    });
+                }
+
+                args.push(self.expression()?);
+
+                if self.match_token(vec![TokenType::Comma]) {
+                    break;
+                }
+            }
+        }
+        let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?;
+        Ok(cexpr(callee, paren.clone(), args))
     }
 
     /**

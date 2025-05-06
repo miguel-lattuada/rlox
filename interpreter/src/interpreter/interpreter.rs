@@ -1,4 +1,5 @@
 use super::environment::Environment;
+use super::function::Function;
 use super::object::Object;
 use crate::ast::token::Token;
 use crate::ast::tokentype::{Literal, TokenType};
@@ -8,19 +9,45 @@ use crate::{
     ast::stmt::{Stmt, Visitor as StmtVisitor},
     error::RuntimeError,
 };
-use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct Interpreter<'a> {
+    pub globals: Rc<RefCell<Environment>>,
     env: Rc<RefCell<Environment>>,
     _reporter: Option<&'a ErrorReporter>,
 }
 
+impl Default for Interpreter<'_> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> Interpreter<'a> {
     pub fn new() -> Self {
+        let globals = Rc::new(RefCell::new(Environment::new(None)));
+
+        globals.borrow_mut().define(
+            &Token {
+                line: 0,
+                token_type: TokenType::Identifier,
+                lexeme: "clock".to_string(),
+                literal: None,
+            },
+            Some(Object::Callable(Function::Native {
+                arity: 0,
+                body: |_| {
+                    let v = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+                    Object::Number(v.as_secs_f64())
+                },
+            })),
+        );
+
         Self {
-            env: Rc::new(RefCell::new(Environment::new(None))),
+            globals: Rc::clone(&globals),
+            env: Rc::clone(&globals),
             _reporter: None,
         }
     }
@@ -55,7 +82,6 @@ impl<'a> Interpreter<'a> {
                 break;
             }
         }
-
         self.env = prev_env;
 
         Ok(())
@@ -103,7 +129,7 @@ impl<'a> Interpreter<'a> {
     }
 }
 
-impl<'a> ExprVisitor<Object> for Interpreter<'a> {
+impl ExprVisitor<Object> for Interpreter<'_> {
     fn visit_grouping_expr(&mut self, expr: &Expr) -> Result<Object, RuntimeError> {
         self.evaluate(expr)
     }
@@ -187,7 +213,7 @@ impl<'a> ExprVisitor<Object> for Interpreter<'a> {
             Literal::Nil => Object::Nil,
             Literal::Boolean(ref b) => Object::Boolean(*b),
         };
-        return Ok(literal);
+        Ok(literal)
     }
 
     fn visit_variable_expr(&mut self, identifier: &Token) -> Result<Object, RuntimeError> {
@@ -218,11 +244,47 @@ impl<'a> ExprVisitor<Object> for Interpreter<'a> {
             return Ok(left);
         }
 
-        return self.evaluate(right);
+        self.evaluate(right)
+    }
+
+    fn visit_call_expr(
+        &mut self,
+        callee: &Expr,
+        paren: &Token,
+        args: &Vec<Expr>,
+    ) -> Result<Object, RuntimeError> {
+        let callee_result = self.evaluate(callee)?;
+
+        let mut args_results = vec![];
+
+        for arg in args {
+            args_results.push(self.evaluate(arg)?);
+        }
+
+        match callee_result {
+            Object::Callable(ref _fn) => {
+                if args_results.len() != _fn.arity() {
+                    return Err(RuntimeError {
+                        token: paren.clone(),
+                        message: format!(
+                            "Expected {} arguments but got {}.",
+                            _fn.arity(),
+                            args_results.len()
+                        ),
+                    });
+                }
+
+                _fn.call(self, &args_results)
+            }
+            _ => Err(RuntimeError {
+                token: paren.clone(),
+                message: "Can only call functions or classes".to_string(),
+            }),
+        }
     }
 }
 
-impl<'a> StmtVisitor<()> for Interpreter<'a> {
+impl StmtVisitor<()> for Interpreter<'_> {
     fn visit_print_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(expr)?;
         // TODO: implement Display on Object

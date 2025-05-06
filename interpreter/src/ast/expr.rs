@@ -20,10 +20,12 @@ pub trait Visitor<T> {
         operator: &Token,
         right: &Expr,
     ) -> Result<T, RuntimeError>;
+    fn visit_call_expr(&mut self, calee: &Expr, paren: &Token, args: &Vec<Expr>) -> Result<T, RuntimeError>;
 }
 
 #[derive(Debug)]
 pub enum Expr {
+    // TODO: Remove Expr postfix
     AssignExpr(Token, Box<Expr>),
     BinaryExpr(Box<Expr>, Token, Box<Expr>),
     GroupingExpr(Box<Expr>),
@@ -31,6 +33,7 @@ pub enum Expr {
     UnaryExpr(Token, Box<Expr>),
     VariableExpr(Token),
     LogicalExpr(Box<Expr>, Token, Box<Expr>),
+    Call(Box<Expr>, Token, Vec<Expr>),
 }
 
 impl Expr {
@@ -53,6 +56,9 @@ impl Expr {
             AssignExpr(ref token, ref expr) => visitor.visit_assign_expr(token, expr),
             LogicalExpr(ref left, ref operator, ref right) => {
                 visitor.visit_logical_expr(left, operator, right)
+            },
+            Call(ref callee, ref paren, ref args) => {
+                visitor.visit_call_expr(callee, paren, args)
             }
         }
     }
@@ -84,4 +90,8 @@ pub fn aexpr(identifier: Token, value: Expr) -> Expr {
 
 pub fn lgexpr(left: Expr, operator: Token, right: Expr) -> Expr {
     Expr::LogicalExpr(Box::new(left), operator, Box::new(right))
+}
+
+pub fn cexpr(callee: Expr, paren: Token, arguments: Vec<Expr>) -> Expr {
+    Expr::Call(Box::new(callee), paren, arguments)
 }

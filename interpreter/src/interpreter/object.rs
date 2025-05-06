@@ -1,10 +1,13 @@
 use std::fmt::Debug;
 
+use super::function::Function;
+
 #[derive(Debug, Clone)]
 pub enum Object {
     Number(f64),
     String(String),
     Boolean(bool),
+    Callable(Function),
     Nil,
 }
 
@@ -21,7 +24,7 @@ impl From<Object> for bool {
 impl From<&Object> for bool {
     fn from(object: &Object) -> Self {
         match object {
-            Object::Boolean(boolean) => boolean.clone(),
+            Object::Boolean(boolean) => *boolean,
             Object::Nil => false,
             _ => true,
         }
@@ -35,6 +38,7 @@ impl From<Object> for String {
             Object::Boolean(boolean) => boolean.to_string(),
             Object::String(string) => string,
             Object::Nil => "nil".to_string(),
+            Object::Callable(_fn) => "<native fn>".to_string(),
         }
     }
 }

@@ -20,10 +20,15 @@ pub trait Visitor<T> {
         operator: &Token,
         right: &Expr,
     ) -> Result<T, RuntimeError>;
-    fn visit_call_expr(&mut self, calee: &Expr, paren: &Token, args: &Vec<Expr>) -> Result<T, RuntimeError>;
+    fn visit_call_expr(
+        &mut self,
+        calee: &Expr,
+        paren: &Token,
+        args: &Vec<Expr>,
+    ) -> Result<T, RuntimeError>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     // TODO: Remove Expr postfix
     AssignExpr(Token, Box<Expr>),
@@ -56,10 +61,8 @@ impl Expr {
             AssignExpr(ref token, ref expr) => visitor.visit_assign_expr(token, expr),
             LogicalExpr(ref left, ref operator, ref right) => {
                 visitor.visit_logical_expr(left, operator, right)
-            },
-            Call(ref callee, ref paren, ref args) => {
-                visitor.visit_call_expr(callee, paren, args)
             }
+            Call(ref callee, ref paren, ref args) => visitor.visit_call_expr(callee, paren, args),
         }
     }
 }

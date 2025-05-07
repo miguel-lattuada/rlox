@@ -1,7 +1,7 @@
 use std::cell::Cell;
 
 use crate::ast::expr::{aexpr, cexpr, lgexpr, vexpr};
-use crate::ast::stmt::{ifstmt, vdstmt, wstmt};
+use crate::ast::stmt::{fstmt, ifstmt, vdstmt, wstmt};
 use crate::{
     ast::{
         expr::{bexpr, gexpr, lexpr, uexpr, Expr},
@@ -54,6 +54,10 @@ impl<'a> Parser<'a> {
                                            | varDecl ;
     */
     fn declaration(&self) -> Result<Stmt, ParseError> {
+        if self.match_token(vec![TokenType::Fun]) {
+            return self.fun_decl_stmt("function");
+        }
+
         if self.match_token(vec![TokenType::Var]) {
             return self.var_decl_stmt();
         }
@@ -185,6 +189,51 @@ impl<'a> Parser<'a> {
         let body = self.statement()?;
 
         Ok(wstmt(condition, body))
+    }
+
+    /** Parse gramma rule: funDecl        → "fun" function ;
+     *                     function       → IDENTIFIER "(" parameters? ")" block ;
+     */
+    fn fun_decl_stmt(&self, kind: &str) -> Result<Stmt, ParseError> {
+        let name = self.consume(
+            TokenType::Identifier,
+            format!("Expect {} name.", kind).as_str(),
+        )?;
+
+        self.consume(
+            TokenType::LeftParen,
+            format!("Expect '(' after {} name.", kind).as_str(),
+        )?;
+
+        let mut parameters = vec![];
+
+        if !self.check(TokenType::RightParen) {
+            loop {
+                if parameters.len() > 255 {
+                    self.error(self.peek(), "Can't have more than 255 parameters");
+                }
+
+                parameters.push(
+                    self.consume(TokenType::Identifier, "Expect parameter name.")?
+                        .clone(),
+                );
+
+                if !self.match_token(vec![TokenType::Comma]) {
+                    break;
+                }
+            }
+        }
+
+        self.consume(TokenType::RightParen, "Expect ')' after parameters.")?;
+
+        self.consume(
+            TokenType::LeftBrace,
+            format!("Expect '{{' to start {} body.", kind).as_str(),
+        )?;
+
+        let body = self.block()?;
+
+        Ok(fstmt(name.clone(), parameters, Stmt::Block(body)))
     }
 
     /**
@@ -392,11 +441,12 @@ impl<'a> Parser<'a> {
 
                 args.push(self.expression()?);
 
-                if self.match_token(vec![TokenType::Comma]) {
+                if !self.match_token(vec![TokenType::Comma]) {
                     break;
                 }
             }
         }
+
         let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?;
         Ok(cexpr(callee, paren.clone(), args))
     }

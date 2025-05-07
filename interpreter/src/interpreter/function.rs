@@ -1,6 +1,10 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc};
 
-use crate::error::RuntimeError;
+use crate::{
+    ast::{stmt::Stmt, token::Token},
+    error::RuntimeError,
+    interpreter::environment::Environment,
+};
 
 use super::{object::Object, Interpreter};
 
@@ -10,19 +14,43 @@ pub enum Function {
         arity: usize,
         body: fn(&Vec<Object>) -> Object,
     },
-    User,
+    User {
+        identifier: Token,
+        parameters: Vec<Token>,
+        body: Box<Stmt>,
+    },
 }
 
 impl Function {
     pub fn call(
         &self,
-        _interpreter: &Interpreter,
+        _interpreter: &mut Interpreter,
         arguments: &Vec<Object>,
     ) -> Result<Object, RuntimeError> {
         use Function::*;
+
         match self {
             Native { body, .. } => Ok(body(arguments)),
-            _ => Ok(Object::Nil),
+            User {
+                body,
+                identifier,
+                parameters,
+            } => match **body {
+                Stmt::Block(ref stmts) => {
+                    let mut env = Environment::new(Some(Rc::clone(&_interpreter.globals)));
+
+                    for (idx, token) in parameters.iter().enumerate() {
+                        env.define(token, arguments.get(idx).cloned());
+                    }
+
+                    _interpreter.execute_block(stmts, env)?;
+                    Ok(Object::Nil)
+                }
+                _ => Err(RuntimeError {
+                    token: identifier.clone(),
+                    message: "[UNREACHABLE] Function statements must be a block.".to_string(),
+                }),
+            },
         }
     }
 
@@ -30,7 +58,7 @@ impl Function {
         use Function::*;
         match self {
             Native { arity, .. } => *arity,
-            _ => 0,
+            User { parameters, .. } => parameters.len(),
         }
     }
 }

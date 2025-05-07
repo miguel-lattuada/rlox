@@ -19,13 +19,20 @@ pub trait Visitor<T> {
         stmt_else: &Option<Box<Stmt>>,
     ) -> Result<T, RuntimeError>;
     fn visit_while_stmt(&mut self, expr: &Expr, stmt: &Stmt) -> Result<T, RuntimeError>;
+    fn visit_function_stmt(
+        &mut self,
+        identifier: &Token,
+        prameters: &Vec<Token>,
+        body: &Box<Stmt>,
+    ) -> Result<T, RuntimeError>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Stmt {
     Print(Expr),
     Expression(Expr),
     VarDeclaration(Token, Option<Expr>),
+    Function(Token, Vec<Token>, Box<Stmt>),
     Block(Vec<Stmt>),
     If(Expr, Box<Stmt>, Option<Box<Stmt>>),
     While(Expr, Box<Stmt>),
@@ -48,6 +55,9 @@ impl Stmt {
                 visitor.visit_if_stmt(expr, stmt_then, stmt_else)
             }
             While(ref expr, ref stmt) => visitor.visit_while_stmt(expr, stmt),
+            Function(ref identifier, ref parameters, ref body) => {
+                visitor.visit_function_stmt(identifier, parameters, body)
+            }
         }
     }
 }
@@ -65,13 +75,13 @@ pub fn vdstmt(token: Token, initializer: Option<Expr>) -> Stmt {
 }
 
 pub fn ifstmt(expr: Expr, stmt_then: Stmt, stmt_else: Option<Stmt>) -> Stmt {
-    Stmt::If(
-        expr,
-        Box::new(stmt_then),
-        Some(Box::new(stmt_else.unwrap())),
-    )
+    Stmt::If(expr, Box::new(stmt_then), stmt_else.map(Box::new))
 }
 
 pub fn wstmt(expr: Expr, stmt: Stmt) -> Stmt {
     Stmt::While(expr, Box::new(stmt))
+}
+
+pub fn fstmt(identifier: Token, parameters: Vec<Token>, body: Stmt) -> Stmt {
+    Stmt::Function(identifier, parameters, Box::new(body))
 }

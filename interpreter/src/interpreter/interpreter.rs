@@ -70,7 +70,11 @@ impl<'a> Interpreter<'a> {
         stmt.accept(self)
     }
 
-    fn execute_block(&mut self, stmts: &Vec<Stmt>, env: Environment) -> Result<(), RuntimeError> {
+    pub fn execute_block(
+        &mut self,
+        stmts: &Vec<Stmt>,
+        env: Environment,
+    ) -> Result<(), RuntimeError> {
         let prev_env = Rc::clone(&self.env);
 
         self.env = Rc::new(RefCell::new(env));
@@ -342,6 +346,24 @@ impl StmtVisitor<()> for Interpreter<'_> {
         while bool::from(self.evaluate(expr)?) {
             self.execute(stmt)?;
         }
+        Ok(())
+    }
+
+    fn visit_function_stmt(
+        &mut self,
+        identifier: &Token,
+        parameters: &Vec<Token>,
+        body: &Box<Stmt>,
+    ) -> Result<(), RuntimeError> {
+        self.env.borrow_mut().define(
+            identifier,
+            Some(Object::Callable(Function::User {
+                parameters: parameters.clone(),
+                identifier: identifier.clone(),
+                body: body.clone(),
+            })),
+        );
+
         Ok(())
     }
 }

@@ -1,4 +1,5 @@
 use crate::ast::{token::Token, tokentype::TokenType};
+use crate::interpreter::Object;
 use std::cell::Cell;
 use std::{error::Error, fmt::Display};
 
@@ -73,6 +74,7 @@ impl Error for ParseError {}
 pub struct RuntimeError {
     pub token: Token,
     pub message: String,
+    pub value: Option<Object>,
 }
 impl Display for RuntimeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

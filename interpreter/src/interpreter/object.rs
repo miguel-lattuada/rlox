@@ -1,4 +1,4 @@
-use std::{fmt::Debug, iter::Cloned};
+use std::fmt::{Debug, Display};
 
 use super::function::Function;
 
@@ -51,6 +51,15 @@ impl PartialEq for Object {
             (Object::Boolean(l), Object::Boolean(r)) => l == r,
             (Object::Nil, Object::Nil) => true,
             _ => false,
+        }
+    }
+}
+
+impl Display for Object {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Object::Callable(ref fun) => write!(f, "{}", fun),
+            _ => write!(f, "{:?}", self),
         }
     }
 }

@@ -37,6 +37,7 @@ impl<'a> Interpreter<'a> {
                 literal: None,
             },
             Some(Object::Callable(Function::Native {
+                identifier: "clock".to_string(),
                 arity: 0,
                 body: |_| {
                     let v = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
@@ -76,15 +77,10 @@ impl<'a> Interpreter<'a> {
         env: Environment,
     ) -> Result<(), RuntimeError> {
         let prev_env = Rc::clone(&self.env);
-
         self.env = Rc::new(RefCell::new(env));
 
         for stmt in stmts {
-            if let Ok(()) = self.execute(stmt) {
-                continue;
-            } else {
-                break;
-            }
+            self.execute(stmt)?;
         }
         self.env = prev_env;
 
@@ -97,6 +93,7 @@ impl<'a> Interpreter<'a> {
 
     fn non_numeric_operand_error<T>(&self, token: &Token) -> Result<T, RuntimeError> {
         Err(RuntimeError {
+            value: None,
             token: token.clone(),
             message: "operands must be numeric for operation".to_string(),
         })
@@ -115,6 +112,7 @@ impl<'a> Interpreter<'a> {
                 TokenType::Star => Ok(Object::Number(lvn * rvn)),
                 TokenType::Slash => Ok(Object::Number(lvn / rvn)),
                 _ => Err(RuntimeError {
+                    value: None,
                     token: token.clone(),
                     message: "unknown math operation".to_string(),
                 }),
@@ -204,6 +202,7 @@ impl ExprVisitor<Object> for Interpreter<'_> {
             },
             TokenType::Bang => Ok(Object::Boolean(!bool::from(right_expr_value))),
             _ => Err(RuntimeError {
+                value: None,
                 token: operator.clone(),
                 message: "unexpected token on unary expression".to_string(),
             }),
@@ -269,6 +268,7 @@ impl ExprVisitor<Object> for Interpreter<'_> {
             Object::Callable(ref _fn) => {
                 if args_results.len() != _fn.arity() {
                     return Err(RuntimeError {
+                        value: None,
                         token: paren.clone(),
                         message: format!(
                             "Expected {} arguments but got {}.",
@@ -281,6 +281,7 @@ impl ExprVisitor<Object> for Interpreter<'_> {
                 _fn.call(self, &args_results)
             }
             _ => Err(RuntimeError {
+                value: None,
                 token: paren.clone(),
                 message: "Can only call functions or classes".to_string(),
             }),
@@ -292,7 +293,7 @@ impl StmtVisitor<()> for Interpreter<'_> {
     fn visit_print_stmt(&mut self, expr: &Expr) -> Result<(), RuntimeError> {
         let value = self.evaluate(expr)?;
         // TODO: implement Display on Object
-        println!("{:?}", value);
+        println!("{}", value);
         Ok(())
     }
 
@@ -312,15 +313,14 @@ impl StmtVisitor<()> for Interpreter<'_> {
             value = Some(self.evaluate(expr)?);
         }
 
-        // self.env.define(identifier, value);
         self.env.borrow_mut().define(identifier, value);
 
         Ok(())
     }
 
     fn visit_block_stmt(&mut self, stmts: &Vec<Stmt>) -> Result<(), RuntimeError> {
-        let clone = Rc::clone(&self.env);
-        self.execute_block(stmts, Environment::new(Some(clone)))?;
+        let env = Rc::clone(&self.env);
+        self.execute_block(stmts, Environment::new(Some(env)))?;
         Ok(())
     }
 
@@ -365,5 +365,14 @@ impl StmtVisitor<()> for Interpreter<'_> {
         );
 
         Ok(())
+    }
+
+    fn visit_return_stmt(&mut self, token: &Token, expr: &Expr) -> Result<(), RuntimeError> {
+        let result = self.evaluate(expr)?;
+        Err(RuntimeError {
+            token: token.clone(),
+            message: "<fn return>".to_string(),
+            value: Some(result),
+        })
     }
 }

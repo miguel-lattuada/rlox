@@ -1,4 +1,7 @@
-use std::{fmt::Debug, rc::Rc};
+use std::{
+    fmt::{Debug, Display},
+    rc::Rc,
+};
 
 use crate::{
     ast::{stmt::Stmt, token::Token},
@@ -11,6 +14,7 @@ use super::{object::Object, Interpreter};
 #[derive(Debug, Clone)]
 pub enum Function {
     Native {
+        identifier: String,
         arity: usize,
         body: fn(&Vec<Object>) -> Object,
     },
@@ -43,10 +47,14 @@ impl Function {
                         env.define(token, arguments.get(idx).cloned());
                     }
 
-                    _interpreter.execute_block(stmts, env)?;
+                    if let Err(err) = _interpreter.execute_block(stmts, env) {
+                        return Ok(err.value.unwrap());
+                    }
+
                     Ok(Object::Nil)
                 }
                 _ => Err(RuntimeError {
+                    value: None,
                     token: identifier.clone(),
                     message: "[UNREACHABLE] Function statements must be a block.".to_string(),
                 }),
@@ -59,6 +67,16 @@ impl Function {
         match self {
             Native { arity, .. } => *arity,
             User { parameters, .. } => parameters.len(),
+        }
+    }
+}
+
+impl Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Function::*;
+        match self {
+            Native { identifier, .. } => write!(f, "<native fn {}>", identifier),
+            User { identifier, .. } => write!(f, "<fn {}>", identifier.lexeme),
         }
     }
 }

@@ -3,6 +3,7 @@ use crate::ast::token::Token;
 use crate::error::RuntimeError;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::rc::Rc;
 
 pub struct Environment {
@@ -61,6 +62,7 @@ impl Environment {
 
     fn uninitialized(&self, token: Token) -> Result<Object, RuntimeError> {
         Err(RuntimeError {
+            value: None,
             message: format!("Uninitialized variable '{}'.", token.lexeme),
             token,
         })
@@ -68,8 +70,17 @@ impl Environment {
 
     fn undefined(&self, token: Token) -> Result<Object, RuntimeError> {
         Err(RuntimeError {
+            value: None,
             message: format!("Undefined variable '{}'.", token.lexeme),
             token,
         })
+    }
+}
+
+impl Debug for Environment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let elements = self.values.iter().collect::<Vec<_>>();
+
+        write!(f, "Current: {:?} - Parent: {:?}", elements, self.enclosing)
     }
 }

@@ -86,6 +86,10 @@ impl<'a> Parser<'a> {
             return self.while_stmt();
         }
 
+        if self.match_token(vec![TokenType::Return]) {
+            return self.return_stmt();
+        }
+
         if self.match_token(vec![TokenType::LeftBrace]) {
             let stmts = self.block()?;
             return Ok(Stmt::Block(stmts));
@@ -189,6 +193,22 @@ impl<'a> Parser<'a> {
         let body = self.statement()?;
 
         Ok(wstmt(condition, body))
+    }
+
+    /**
+     *Parse grammar rule: returnStmt     → "return" expression? ";";
+     */
+    fn return_stmt(&self) -> Result<Stmt, ParseError> {
+        let token = self.previous();
+        let mut return_expr = lexpr(Literal::Nil);
+
+        if !self.match_token(vec![TokenType::Semicolon]) {
+            return_expr = self.expression()?;
+        }
+
+        self.consume(TokenType::Semicolon, "Expect ';' after return value.")?;
+
+        Ok(Stmt::Return(token.clone(), return_expr))
     }
 
     /** Parse gramma rule: funDecl        → "fun" function ;

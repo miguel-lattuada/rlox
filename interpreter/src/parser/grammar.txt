@@ -7,11 +7,13 @@ statement      → exprStmt
                | ifStmt
                | printStmt
                | whileStmt
-               | block ;
+               | returnStmt
+               | block
 forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
                  expression? ";"
                  expression? ")" statement ;
 whileStmt      → "while" "(" expression ")" statement ;
+returnStmt     → "return" expression? ";";
 block          → "{" declaration* "}" ;
 exprStmt       → expression ";" ;
 ifStmt         → "if" "(" expression ")" statement

@@ -25,6 +25,7 @@ pub trait Visitor<T> {
         prameters: &Vec<Token>,
         body: &Box<Stmt>,
     ) -> Result<T, RuntimeError>;
+    fn visit_return_stmt(&mut self, token: &Token, expr: &Expr) -> Result<T, RuntimeError>;
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +37,7 @@ pub enum Stmt {
     Block(Vec<Stmt>),
     If(Expr, Box<Stmt>, Option<Box<Stmt>>),
     While(Expr, Box<Stmt>),
+    Return(Token, Expr),
 }
 
 impl Stmt {
@@ -58,6 +60,7 @@ impl Stmt {
             Function(ref identifier, ref parameters, ref body) => {
                 visitor.visit_function_stmt(identifier, parameters, body)
             }
+            Return(ref token, ref expr) => visitor.visit_return_stmt(token, expr),
         }
     }
 }

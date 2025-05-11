@@ -80,7 +80,9 @@ impl<'a> Interpreter<'a> {
         self.env = Rc::new(RefCell::new(env));
 
         for stmt in stmts {
-            self.execute(stmt)?;
+            self.execute(stmt).inspect_err(|_| {
+                self.env = Rc::clone(&prev_env);
+            })?;
         }
         self.env = prev_env;
 

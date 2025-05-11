@@ -77,14 +77,15 @@ impl<'a> Interpreter<'a> {
         env: Environment,
     ) -> Result<(), RuntimeError> {
         let prev_env = Rc::clone(&self.env);
-        self.env = Rc::new(RefCell::new(env));
+        let mut this = scopeguard::guard(self, |_self| {
+            _self.env = prev_env;
+        });
+
+        this.env = Rc::new(RefCell::new(env));
 
         for stmt in stmts {
-            self.execute(stmt).inspect_err(|_| {
-                self.env = Rc::clone(&prev_env);
-            })?;
+            this.execute(stmt)?;
         }
-        self.env = prev_env;
 
         Ok(())
     }

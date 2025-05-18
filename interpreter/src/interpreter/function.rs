@@ -9,7 +9,7 @@ use crate::{
     interpreter::environment::Environment,
 };
 
-use super::{object::Object, Interpreter};
+use super::{object::Object, Interpreter, Scope};
 
 #[derive(Debug, Clone)]
 pub enum Function {
@@ -22,6 +22,7 @@ pub enum Function {
         identifier: Token,
         parameters: Vec<Token>,
         body: Box<Stmt>,
+        closure: Scope,
     },
 }
 
@@ -39,9 +40,10 @@ impl Function {
                 body,
                 identifier,
                 parameters,
+                closure,
             } => match **body {
                 Stmt::Block(ref stmts) => {
-                    let mut env = Environment::new(Some(Rc::clone(&_interpreter.globals)));
+                    let mut env = Environment::new(Some(Rc::clone(closure)));
 
                     for (idx, token) in parameters.iter().enumerate() {
                         env.define(token, arguments.get(idx).cloned());

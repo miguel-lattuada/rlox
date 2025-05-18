@@ -13,9 +13,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+pub type Scope = Rc<RefCell<Environment>>;
+
 pub struct Interpreter<'a> {
-    pub globals: Rc<RefCell<Environment>>,
-    env: Rc<RefCell<Environment>>,
+    pub globals: Scope,
+    env: Scope,
     _reporter: Option<&'a ErrorReporter>,
 }
 
@@ -364,6 +366,7 @@ impl StmtVisitor<()> for Interpreter<'_> {
                 parameters: parameters.clone(),
                 identifier: identifier.clone(),
                 body: body.clone(),
+                closure: Rc::clone(&self.env),
             })),
         );
 
